@@ -34,207 +34,137 @@ namespace surfsara
 {
   namespace ast
   {
+    class Node;
+    
+    typedef int64_t Integer;
+    typedef bool Boolean;
+    typedef std::string String;
+    typedef char Char;
+    typedef double Float;
+
     struct Null
     {
       inline bool operator==(const Null & rhs) const{ return true; }
     };
 
-    typedef int64_t Integer;
-    class Node;
-
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Array
+    //
+    ////////////////////////////////////////////////////////////////////////////
     class Array
     {
     public:
-      Array(const std::initializer_list<Node> & l) : data(l) {}
-      inline bool operator==(const Array & rhs) const{ return this == &rhs; }
+      typedef Node value_type;
+      typedef std::vector<Node>::iterator iterator;
+
+      Array();
+      Array(const std::initializer_list<Node> & l);
+      inline void forEach(std::function<void(Node & node)> lambda);
+      inline void forEach(std::function<void(const Node & node)> lambda)const;
+      inline bool operator==(const Array & rhs) const;
+
+      inline iterator end();
+      inline void insert(iterator itr, Node value);
     private:
       std::vector<Node> data;
     };
 
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Object
+    //
+    ////////////////////////////////////////////////////////////////////////////
     class Object
     {
     public:
-      Object(const std::initializer_list<std::pair<std::string, Node>> & l);
-      inline bool set(const std::string & k, const Node & node);
-      inline bool set(const std::string & k, Node && node);
-      inline bool has(const std::string & v);
-      inline bool modify(const std::string & , std::function<void(Node & node)> lambda);
-      inline void forEach(std::function<void(const std::string &, Node & node)> lambda);
-      inline void forEach(std::function<void(const std::string &, const Node & node)> lambda) const;
-      inline bool remove(const std::string &);
-      inline std::size_t remove(std::function<bool(const std::string &, const Node & n)> predicate);
+      typedef std::pair<String, Node> value_type;
+      typedef std::list<value_type>::iterator iterator;
+      
+      Object();
+      Object(const std::initializer_list<std::pair<String, Node>> & l);
+      inline bool set(const String & k, const Node & node);
+      inline bool set(const String & k, Node && node);
+      inline bool has(const String & v);
+      inline bool modify(const String & , std::function<void(Node & node)> lambda);
+      inline void forEach(std::function<void(const String &, Node & node)> lambda);
+      inline void forEach(std::function<void(const String &, const Node & node)> lambda) const;
+      inline bool remove(const String &);
+      inline std::size_t remove(std::function<bool(const String &, const Node & n)> predicate);
       inline bool operator==(const Object & rhs)const{ return this == &rhs; }
+
+      /*@todo use fusion adapter */
+      inline iterator end();
+      inline void insert(iterator itr, const std::pair<String, Node> & value);
+
     private:
       template<typename T>
-      inline bool setInternal(const std::string & k, T node);
-      std::list<std::pair<std::string, Node>> data;
-      using iterator = std::list<std::pair<std::string, Node>>::iterator;
-      std::unordered_map<std::string, iterator> lookup;
+      inline bool setInternal(const String & k, T node);
+      std::list<std::pair<String, Node>> data;
+      //using iterator = std::list<std::pair<String, Node>>::iterator;
+      std::unordered_map<String, iterator> lookup;
     };
 
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Node
+    //
+    ////////////////////////////////////////////////////////////////////////////
     class Node
     {
     public:
-      Node() : value(Null()) {}
+      Node();
       template<typename T>
-      Node(T v, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr) : value(double(v)) {}
+      Node(T v, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr);
       
       template<typename T>
-      Node(T v, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr) : value(Integer(v)) {}
+      Node(T v, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr);
       
-      Node(Null a) : value(a){}
-      Node(bool a) : value(a){}
-      Node(std::string  a) : value(a) {}
-      Node(const Array & a) : value(a) {}
-      Node(const Object & a) : value(a) {}
-      Node(std::initializer_list<std::pair<std::string, Node>> a) : value(Object(a)) {}
-      Node(std::initializer_list<Node> a) : value(Array(a)) {}
+      Node(Null a);
+      Node(Boolean a);
+      Node(const Char * str);
+      Node(String  a);
+      Node(const Array & a);
+      Node(const Object & a);
+      Node(std::initializer_list<std::pair<String, Node>> a);
+      Node(std::initializer_list<Node> a);
 
       template<typename T>
-      bool isA() const
-      {
-        return boost::get<T>(&value) != nullptr;
-      }
+      bool isA() const;
 
       template<typename T>
-      const T& as() const
-      {
-        return boost::get<T>(value);
-      }
+      const T& as() const;
 
-      inline bool operator==(const Node & rhs) const
-      {
-        return value == rhs.value;
-      }
+      template<typename T>
+      T& as();
 
-      inline bool operator!=(const Node & rhs) const
-      {
-        return !(value == rhs.value);
-      }
+      inline bool operator==(const Node & rhs) const;
+      inline bool operator!=(const Node & rhs) const;
+
+      template<typename Visitor> 
+      typename Visitor::result_type apply_visitor(Visitor & visitor) const; 
 
     private:
       typedef boost::variant<Integer,
-                             double,
-                             bool,
+                             Float,
+                             Boolean,
                              Null,
-                             std::string,
+                             String,
                              Array,
                              Object> Value;
       Value value;
     };
 
-    inline std::pair<std::string, Node> Pair(const std::string & k, const Node & node)
-    {
-      return std::make_pair(k, node);
-    }
+    typedef std::pair<String, Node> Pair;
   } // ns ast
 } // ns surfsara
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Implementation
+// Implementation of Array
 //
 ////////////////////////////////////////////////////////////////////////////////
-inline surfsara::ast::Object::Object(const std::initializer_list<std::pair<std::string, Node>> & l) : data(l)
-{
-  for(auto itr = data.begin(); itr != data.end(); ++itr)
-  {
-    lookup[itr->first] = itr;
-  }
-}
 
-inline bool surfsara::ast::Object::set(const std::string & k, const Node & node)
-{
-  return setInternal(k, node);
-}
-
-inline bool surfsara::ast::Object::set(const std::string & k, Node && node)
-{
-  return setInternal(k, node);
-}
-
-inline bool surfsara::ast::Object::has(const std::string & v)
-{
-  return lookup.find(v) != lookup.end();
-}
-
-inline bool surfsara::ast::Object::modify(const std::string & key, std::function<void(Node & node)> lambda)
-{
-  auto itr = lookup.find(key);
-  if(itr == lookup.end())
-  {
-    return false;
-  }
-  else
-  {
-    lambda(itr->second->second);
-    return true;
-  }
-}
-
-inline void surfsara::ast::Object::forEach(std::function<void(const std::string & key, Node & node)> lambda)
-{
-  for(auto p : data)
-  {
-    lambda(p.first, p.second);
-  }
-}
-
-inline void surfsara::ast::Object::forEach(std::function<void(const std::string & key, const Node & node)> lambda) const
-{
-  for(auto p : data)
-  {
-    lambda(p.first, p.second);
-  }
-}
-
-inline bool surfsara::ast::Object::remove(const std::string & key)
-{
-  auto itr = lookup.find(key);
-  if(itr == lookup.end())
-  {
-    return false;
-  }
-  else
-  {
-    data.erase(itr->second);
-    lookup.erase(key);
-    return true;
-  }
-}
-
-inline std::size_t surfsara::ast::Object::remove(std::function<bool(const std::string &, const Node & n)> predicate)
-{
-  std::size_t n = 0;
-  for(auto itr = data.begin(); itr != data.end();)
-  {
-    if(predicate(itr->first, itr->second))
-    {
-      itr = data.erase(itr);
-      n++;
-    }
-    else
-    {
-      ++itr;
-    }
-  }
-  return n;
-}
-
-
-template<typename T>
-bool surfsara::ast::Object::setInternal(const std::string & key, T node)
-{
-  auto itr = lookup.find(key);
-  if(itr == lookup.end())
-  {
-    auto p = data.insert(data.end(), std::make_pair(key, node));
-    lookup[key] = p;
-    return true;
-  }
-  else
-  {
-    *itr->second = std::make_pair(key, node);
-    return false;
-  }
-}
+#include "impl/object.hpp"
+#include "impl/array.hpp"
+#include "impl/node.hpp"
