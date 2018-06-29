@@ -42,7 +42,7 @@ TEST_CASE("test null atom", "[Node]")
   REQUIRE(n == n);
   REQUIRE(n.as<Null>() == null);
 
-  REQUIRE(toString(n) == "null");
+  REQUIRE(formatJson(n) == "null");
 }
 
 TEST_CASE("test integer atom", "[Node]")
@@ -63,8 +63,8 @@ TEST_CASE("test integer atom", "[Node]")
   REQUIRE(n1 == n3);
   REQUIRE(n1.as<Integer>() == 1);
 
-  REQUIRE(toString(n1) == "1");
-  REQUIRE(toString(n2) == "2");
+  REQUIRE(formatJson(n1) == "1");
+  REQUIRE(formatJson(n2) == "2");
 }
 
 TEST_CASE("test boolea atom", "[Node]")
@@ -85,8 +85,8 @@ TEST_CASE("test boolea atom", "[Node]")
   REQUIRE(f.as<Boolean>() == false);
   REQUIRE(t.as<Boolean>() == true);
 
-  REQUIRE(toString(f) == "false");
-  REQUIRE(toString(t) == "true");
+  REQUIRE(formatJson(f) == "false");
+  REQUIRE(formatJson(t) == "true");
 }
 
 TEST_CASE("test float atom", "[Node]")
@@ -105,8 +105,8 @@ TEST_CASE("test float atom", "[Node]")
   REQUIRE(x == x);
   REQUIRE(x.as<Float>() == 1.0);
 
-  REQUIRE(toString(x) == "1.0");
-  REQUIRE(toString(y) == "2.1");
+  REQUIRE(formatJson(x) == "1.0");
+  REQUIRE(formatJson(y) == "2.1");
 }
 
 TEST_CASE("test string atom", "[Node]")
@@ -127,12 +127,20 @@ TEST_CASE("test string atom", "[Node]")
   REQUIRE(s1 == s3);
   REQUIRE(s1.as<String>() == "abc");
 
-  REQUIRE(toString(s1) == "\"abc\"");
+  REQUIRE(formatJson(s1) == "\"abc\"");
 }
 
 TEST_CASE("test string escape", "[Node]")
 {
-  REQUIRE(toString(Node("\b \n \r \t \" \\")) == "\"\\b \\n \\r \\t \\\" \\\\\"");
+  REQUIRE(Node("\\t").as<String>() == "\\t");
+  REQUIRE(formatJson(Node("\t")) == "\"\\t\"");
+  REQUIRE(formatJson(Node("\b \n \r \t \" \\")) == "\"\\b \\n \\r \\t \\\" \\\\\"");
+}
+
+TEST_CASE("test string escape unicode", "[Node]")
+{
+  REQUIRE(Node(u8"\u0141 \u0143").as<String>() == u8"\u0141 \u0143");
+  REQUIRE(formatJson(Node(u8"\u0141 \u0143")) == u8"\"\u0141 \u0143\"");
 }
 
 TEST_CASE("test array", "[Node]")
@@ -158,7 +166,7 @@ TEST_CASE("test array", "[Node]")
   REQUIRE(array == array);
   REQUIRE(array2 == array2);
 
-  REQUIRE(toString(array) == "[null,1,true,1.0,\"abc\",[null,2],{\"two\":2,\"three\":3}]");
+  REQUIRE(formatJson(array) == "[null,1,true,1.0,\"abc\",[null,2],{\"two\":2,\"three\":3}]");
 }
 
 TEST_CASE("test object", "[Node]")
@@ -185,10 +193,10 @@ TEST_CASE("test object", "[Node]")
   REQUIRE(object == object);
   REQUIRE(object2 == object2);
 
-  REQUIRE(toString(object) ==
+  REQUIRE(formatJson(object) ==
           "{\"null\":null,\"integer\":1,\"boolean\":true,\"float\":1.0,\"string\":\"value\","
           "\"array\":[1,2,3],\"object\":{\"a\":1,\"b\":2}}");
-  REQUIRE(toString(object, true) ==
+  REQUIRE(formatJson(object, true) ==
           "{\n"
           "  \"null\": null,\n"
           "  \"integer\": 1,\n"
@@ -210,31 +218,31 @@ TEST_CASE("test object", "[Node]")
 TEST_CASE("object operations", "[Node]")
 {
   Node obj{Pair{"name", "John"}, Pair{"age", 30}, Pair{"car", Null()}};
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null}");
   obj.as<Object>().set("lastname", "Smith");
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null,\"lastname\":\"Smith\"}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null,\"lastname\":\"Smith\"}");
   REQUIRE(obj.as<Object>().has("name"));
   REQUIRE(obj.as<Object>().has("lastname"));
   REQUIRE(obj.as<Object>().has("__") == false);
   REQUIRE(obj.as<Object>().modify("age", [](Node & node){ node = 31; }));
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":31,\"car\":null,\"lastname\":\"Smith\"}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":31,\"car\":null,\"lastname\":\"Smith\"}");
   REQUIRE(obj.as<Object>().modify("__", [](Node & node){ node = 31; }) == false);
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":31,\"car\":null,\"lastname\":\"Smith\"}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":31,\"car\":null,\"lastname\":\"Smith\"}");
   obj.as<Object>().forEach([](const std::string & key,
                               Node & node)
                            {
                              if(key == "age") node = 32;
                            });
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":32,\"car\":null,\"lastname\":\"Smith\"}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":32,\"car\":null,\"lastname\":\"Smith\"}");
   REQUIRE(obj.as<Object>().remove("__") == false);
   REQUIRE(obj.as<Object>().remove("lastname"));
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":32,\"car\":null}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":32,\"car\":null}");
   REQUIRE(obj.as<Object>().remove([](const std::string & key,
                                      const Node & node)
                                   {
                                     return node == Null();
                                   }));
-  REQUIRE(toString(obj) == "{\"name\":\"John\",\"age\":32}");
+  REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":32}");
 }
 
 TEST_CASE("array operations", "[Node]")

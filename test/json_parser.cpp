@@ -76,13 +76,14 @@ TEST_CASE("parse string", "[JsonParser]")
   REQUIRE(parseJson("\" \\\\ \"").as<String>() == " \\ ");
   REQUIRE(parseJson("\" \\\" \"").as<String>() == " \" ");
   REQUIRE(parseJson("\" \\n \\r \\t \\\" \\\\ \"").as<String>() == " \n \r \t \" \\ ");
+  REQUIRE(formatJson(parseJson("\"\\u0141 \\u0143\"")) == "\"\u0141 \u0143\"");
 }
 
 TEST_CASE("parse array", "[JsonParser]")
 {
   std::string array = "[null,1,true,1.0,\"abc\",[null,2],{\"two\":2,\"three\":3}]";
   REQUIRE(parseJson(array).isA<Array>());
-  REQUIRE(toString(parseJson(array)) == array);
+  REQUIRE(formatJson(parseJson(array)) == array);
 }
 
 TEST_CASE("parse objecet", "[JsonParser]")
@@ -108,5 +109,5 @@ TEST_CASE("parse objecet", "[JsonParser]")
     "{\"null\":null,\"integer\":1,\"boolean\":true,\"float\":1.0,\"string\":\"value\","
     "\"array\":[1,2,3],\"object\":{\"a\":1,\"b\":2}}";
   REQUIRE(parseJson(json).isA<Object>());
-  REQUIRE(toString(parseJson(json)) == result);
+  REQUIRE(formatJson(parseJson(json)) == result);
 }

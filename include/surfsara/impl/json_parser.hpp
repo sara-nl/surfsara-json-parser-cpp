@@ -31,6 +31,7 @@ SOFTWARE.
 #define BOOST_SPIRIT_UNICODE
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
+#include <boost/locale.hpp>
 #include <functional>
 
 namespace surfsara
@@ -43,9 +44,7 @@ namespace surfsara
       {
         void operator()(String & res, uint32_t ch) const
         {
-          std::back_insert_iterator<std::string> back_itr(res);
-          boost::utf8_output_iterator<std::back_insert_iterator<std::string>> utf8_iter(back_itr);
-          *back_itr++ = ch;
+          res+= boost::locale::conv::utf_to_utf<char>(&ch, &ch+1);
         }
       };
 
@@ -103,7 +102,11 @@ namespace surfsara
       boost::phoenix::function<details::UnicodeDecoder>  unicodeDecoder;
       escaped = ('\\' > char_("\"\\/bfnrt"))[decoder(_r1, _1)];
       unicode = ("\\u" > hexParser)[unicodeDecoder(_r1, _1)];
-      str = '"' > *(unicode(_val) | escaped(_val) | (char_ - '"' - '\\')[ _val += _1] ) > '"';
+
+      str =
+        lexeme[lit('"') >>
+               *( unicode(_val) | escaped(_val)  | (char_ - '"' - '\\')[ _val += _1]) >>
+               lit('"')];
       keyValuePair = (str >> ':' >> value)
         [boost::spirit::qi::_val = boost::phoenix::construct<Pair>(boost::spirit::qi::_1,
                                                                    boost::spirit::qi::_2)];

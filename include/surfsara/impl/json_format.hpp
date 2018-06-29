@@ -116,7 +116,6 @@ namespace surfsara
               ost.put('f');
               break;
             default:
-              //ost.put(char(ch));
               ost << boost::spirit::to_utf8(ch);
             }
           }
@@ -212,9 +211,9 @@ void surfsara::ast::formatJson(std::ostream & ost,
 }
 
 
-std::string surfsara::ast::toString(const Node & node,
-                                    bool pretty,
-                                    std::size_t indent)
+std::string surfsara::ast::formatJson(const Node & node,
+                                      bool pretty,
+                                      std::size_t indent)
 {
   std::stringstream ss;
   formatJson(ss, node, pretty, indent);
