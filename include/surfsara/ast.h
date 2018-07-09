@@ -57,7 +57,6 @@ namespace surfsara
     public:
       typedef Node value_type;
       typedef std::vector<Node>::iterator iterator;
-
       Array();
       Array(const std::initializer_list<Node> & l);
       inline void forEach(std::function<void(Node & node)> lambda);
@@ -85,12 +84,39 @@ namespace surfsara
       Object(const std::initializer_list<std::pair<String, Node>> & l);
       inline bool set(const String & k, const Node & node);
       inline bool set(const String & k, Node && node);
-      inline bool has(const String & v);
-      inline bool modify(const String & , std::function<void(Node & node)> lambda);
+      inline bool has(const String & v) const;
+      inline Node get(const String & k) const;
+      /** 
+       * calls the lambda function on the node with the key
+       * returns true if the key is found false otherwise
+       */
+      inline bool modify(const String & key, std::function<void(Node & node)> lambda);
+
+      /** 
+       * @todo implement
+       * calls the lambda function on the node of a nested object with path
+       * returns true if the key is found false otherwise
+       */
+      inline bool modify(const std::vector<String> & path, std::function<void(Node & node)> lambda);
+
+      /**
+       * iterate over all elements
+       */
       inline void forEach(std::function<void(const String &, Node & node)> lambda);
       inline void forEach(std::function<void(const String &, const Node & node)> lambda) const;
+
+      /**
+       * Remove the key if exists
+       * return if the keys was found
+       */
       inline bool remove(const String &);
+
+      /**
+       * Remove all elements that fullfill the predicate
+       * returns the numer of removed elements
+       */
       inline std::size_t remove(std::function<bool(const String &, const Node & n)> predicate);
+
       inline bool operator==(const Object & rhs)const{ return this == &rhs; }
 
       /*@todo use fusion adapter */
@@ -101,7 +127,6 @@ namespace surfsara
       template<typename T>
       inline bool setInternal(const String & k, T node);
       std::list<std::pair<String, Node>> data;
-      //using iterator = std::list<std::pair<String, Node>>::iterator;
       std::unordered_map<String, iterator> lookup;
     };
 
@@ -144,6 +169,7 @@ namespace surfsara
       template<typename Visitor> 
       typename Visitor::result_type apply_visitor(Visitor & visitor) const; 
 
+      inline std::string typeName() const;
     private:
       typedef boost::variant<Integer,
                              Float,

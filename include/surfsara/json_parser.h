@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #pragma once
-#include "ast.hpp"
+#include "ast.h"
 #include <iostream>
 #include <string>
 #include <sstream>

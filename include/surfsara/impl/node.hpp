@@ -70,6 +70,17 @@ T& surfsara::ast::Node::as()
   return boost::get<T>(value);
 }
 
+inline std::string surfsara::ast::Node::typeName() const
+{
+  if(isA<Null>())    { return "Null"; }
+  if(isA<String>())  { return "String"; }
+  if(isA<Boolean>()) { return "Boolean"; }
+  if(isA<Integer>()) { return "Integer"; }
+  if(isA<Array>())   { return "Array"; }
+  if(isA<Object>())  { return "Object"; }
+  return "Unknown";
+}
+
 inline bool surfsara::ast::Node::operator==(const Node & rhs) const
 {
   return value == rhs.value;

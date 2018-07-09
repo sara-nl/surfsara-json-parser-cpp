@@ -51,9 +51,20 @@ inline bool surfsara::ast::Object::set(const String & k, Node && node)
   return setInternal(k, node);
 }
 
-inline bool surfsara::ast::Object::has(const String & v)
+inline bool surfsara::ast::Object::has(const String & v) const
 {
   return lookup.find(v) != lookup.end();
+}
+
+inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
+{
+  auto itr = lookup.find(k);
+  if(itr == lookup.end())
+  {
+    /* @todo: impl. Undefined type */
+    return Null();
+  }
+  return itr->second->second;
 }
 
 inline bool surfsara::ast::Object::modify(const String & key, std::function<void(Node & node)> lambda)
