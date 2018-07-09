@@ -33,11 +33,13 @@ inline surfsara::ast::Object::Object()
 }
 
 inline surfsara::ast::Object::Object(const std::initializer_list<std::pair<String, Node>> & l)
-  : data(l)
 {
-  for(auto itr = data.begin(); itr != data.end(); ++itr)
+  std::size_t index = 0;
+  for(auto p : l)
   {
-    lookup[itr->first] = itr;
+    data[index] = p;
+    lookup[p.first] = index;
+    index++;
   }
 }
 
@@ -64,7 +66,16 @@ inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
     /* @todo: impl. Undefined type */
     return Null();
   }
-  return itr->second->second;
+  auto itr2 = data.find(itr->second);
+  if(itr2 != data.end())
+  {
+    return itr2->second.second;
+  }
+  else
+  {
+    /* @todo: impl. Undefined type */
+    return Null();
+  }
 }
 
 inline bool surfsara::ast::Object::modify(const String & key, std::function<void(Node & node)> lambda)
@@ -76,7 +87,8 @@ inline bool surfsara::ast::Object::modify(const String & key, std::function<void
   }
   else
   {
-    lambda(itr->second->second);
+    auto itr2 = data.find(itr->second);
+    lambda(itr2->second.second);
     return true;
   }
 }
@@ -85,7 +97,7 @@ inline void surfsara::ast::Object::forEach(std::function<void(const String & key
 {
   for(auto & p : data)
   {
-    lambda(p.first, p.second);
+    lambda(p.second.first, p.second.second);
   }
 }
 
@@ -93,7 +105,7 @@ inline void surfsara::ast::Object::forEach(std::function<void(const String & key
 {
   for(auto & p : data)
   {
-    lambda(p.first, p.second);
+    lambda(p.second.first, p.second.second);
   }
 }
 
@@ -117,7 +129,7 @@ inline std::size_t surfsara::ast::Object::remove(std::function<bool(const String
   std::size_t n = 0;
   for(auto itr = data.begin(); itr != data.end();)
   {
-    if(predicate(itr->first, itr->second))
+    if(predicate(itr->second.first, itr->second.second))
     {
       itr = data.erase(itr);
       n++;
@@ -136,13 +148,18 @@ bool surfsara::ast::Object::setInternal(const String & key, T node)
   auto itr = lookup.find(key);
   if(itr == lookup.end())
   {
-    auto p = data.insert(data.end(), std::make_pair(key, node));
-    lookup[key] = p;
+    auto index = 0u;
+    if(!data.empty())
+    {
+      index = data.rbegin()->first + 1;
+    }
+    data[index] = std::make_pair(key, node);
+    lookup[key] = index;
     return true;
   }
   else
   {
-    *itr->second = std::make_pair(key, node);
+    data[itr->second] = std::make_pair(key, node);
     return false;
   }
 }

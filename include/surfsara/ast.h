@@ -27,6 +27,7 @@ SOFTWARE.
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <map>
 #include <functional>
 #include <type_traits>
 
@@ -56,7 +57,8 @@ namespace surfsara
     {
     public:
       typedef Node value_type;
-      typedef std::vector<Node>::iterator iterator;
+      typedef std::vector<value_type>::iterator iterator;
+
       Array();
       Array(const std::initializer_list<Node> & l);
       inline void forEach(std::function<void(Node & node)> lambda);
@@ -78,7 +80,7 @@ namespace surfsara
     {
     public:
       typedef std::pair<String, Node> value_type;
-      typedef std::list<value_type>::iterator iterator;
+      typedef std::map<std::size_t, std::pair<String, Node>>::iterator iterator;
       
       Object();
       Object(const std::initializer_list<std::pair<String, Node>> & l);
@@ -126,8 +128,8 @@ namespace surfsara
     private:
       template<typename T>
       inline bool setInternal(const String & k, T node);
-      std::list<std::pair<String, Node>> data;
-      std::unordered_map<String, iterator> lookup;
+      std::map<std::size_t, std::pair<String, Node>> data;
+      std::unordered_map<String, std::size_t> lookup;
     };
 
     ////////////////////////////////////////////////////////////////////////////
