@@ -57,6 +57,16 @@ inline void surfsara::ast::Array::forEach(std::function<void(const Node & node)>
   }
 }
 
+inline std::size_t surfsara::ast::Array::size() const
+{
+  return data.size();
+}
+
+inline void surfsara::ast::Array::pushBack(const Node & node)
+{
+  data.push_back(node);
+}
+
 inline surfsara::ast::Array::iterator surfsara::ast::Array::end()
 {
   return data.end();
@@ -65,6 +75,17 @@ inline surfsara::ast::Array::iterator surfsara::ast::Array::end()
 inline void surfsara::ast::Array::insert(iterator itr, Node value)
 {
   data.insert(itr, value);
+}
+
+inline void surfsara::ast::Array::remove(std::size_t i)
+{
+  data.erase(data.begin() + i);
+}
+
+
+inline surfsara::ast::Node & surfsara::ast::Array::operator[](std::size_t i)
+{
+  return data.at(i);
 }
 
 

@@ -78,6 +78,26 @@ inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
   }
 }
 
+inline surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k)
+{
+  /* @todo: impl. Undefined type */
+  static Node null = Null();
+  auto itr = lookup.find(k);
+  if(itr == lookup.end())
+  {
+    return null;
+  }
+  auto itr2 = data.find(itr->second);
+  if(itr2 != data.end())
+  {
+    return itr2->second.second;
+  }
+  else
+  {
+    return null;
+  }
+}
+
 inline bool surfsara::ast::Object::modify(const String & key, std::function<void(Node & node)> lambda)
 {
   auto itr = lookup.find(key);

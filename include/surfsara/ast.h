@@ -27,6 +27,7 @@ SOFTWARE.
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <exception>
 #include <map>
 #include <functional>
 #include <type_traits>
@@ -42,6 +43,19 @@ namespace surfsara
     typedef std::string String;
     typedef char Char;
     typedef double Float;
+
+    class PathError : public std::exception
+    {
+    public:
+      PathError(const std::vector<std::string> & path,
+                const std::string & msg);
+      virtual const char* what() const noexcept override
+      {
+        return msg.c_str();
+      }
+    private:
+      std::string msg;
+    };
 
     struct Null
     {
@@ -63,10 +77,14 @@ namespace surfsara
       Array(const std::initializer_list<Node> & l);
       inline void forEach(std::function<void(Node & node)> lambda);
       inline void forEach(std::function<void(const Node & node)> lambda)const;
-      inline bool operator==(const Array & rhs) const;
-
-      inline iterator end();
+      inline std::size_t size() const;
+      inline void pushBack(const Node & node);
       inline void insert(iterator itr, Node value);
+      inline void remove(std::size_t i);
+      
+      inline bool operator==(const Array & rhs) const;
+      inline iterator end();
+      inline Node & operator[](std::size_t i);
     private:
       std::vector<Node> data;
     };
@@ -88,6 +106,8 @@ namespace surfsara
       inline bool set(const String & k, Node && node);
       inline bool has(const String & v) const;
       inline Node get(const String & k) const;
+      inline Node & operator[](const String & k);
+
       /** 
        * calls the lambda function on the node with the key
        * returns true if the key is found false otherwise
@@ -168,11 +188,27 @@ namespace surfsara
       inline bool operator==(const Node & rhs) const;
       inline bool operator!=(const Node & rhs) const;
 
+      inline bool update(const std::vector<std::string> & path, const Node & value, bool insert=true);
+      inline bool remove(const std::vector<std::string> & path);
+
+      
       template<typename Visitor> 
       typename Visitor::result_type apply_visitor(Visitor & visitor) const; 
 
       inline std::string typeName() const;
+
     private:
+      inline bool updateImpl(const std::vector<std::string> & path,
+                             const Node & value,
+                             bool insert,
+                             std::size_t pos);
+      inline Node nodeFromPath(const std::vector<std::string> & path,
+                               const Node & node,
+                               std::size_t pos);
+
+      inline bool removeImpl(const std::vector<std::string> & path,
+                             std::size_t pos);
+      
       typedef boost::variant<Integer,
                              Float,
                              Boolean,

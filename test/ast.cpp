@@ -153,7 +153,7 @@ TEST_CASE("test array", "[Node]")
               Array{Null(), 2},
               {Pair("two", 2), Pair("three", 3)}};
   Node array2 = Array{};
-
+  Node array3 = Array();
   REQUIRE(array.isA<Null>()    == false);
   REQUIRE(array.isA<Integer>() == false);
   REQUIRE(array.isA<Boolean>() == false);
@@ -161,6 +161,7 @@ TEST_CASE("test array", "[Node]")
   REQUIRE(array.isA<String>()  == false);
   REQUIRE(array.isA<Array>()   == true);
   REQUIRE(array.isA<Object>()  == false);
+  REQUIRE(array3.isA<Array>()   == true);
 
   REQUIRE(array != array2);
   REQUIRE(array == array);
@@ -247,5 +248,115 @@ TEST_CASE("object operations", "[Node]")
 
 TEST_CASE("array operations", "[Node]")
 {
-  /*@todo */
+  Node n = Array();
+  REQUIRE(n.isA<Array>());
+  n.as<Array>().pushBack(Integer(1));
+  n.as<Array>().pushBack(Boolean(true));
+  n.as<Array>().pushBack(Integer(2));
+  REQUIRE(formatJson(n) == "[1,true,2]");
+  n.as<Array>().remove(1);
+  REQUIRE(formatJson(n) == "[1,2]");
+}
+
+
+TEST_CASE("update operations", "[Node]")
+{
+  {
+    Node node = Integer(1);
+    REQUIRE_THROWS(node.update({"a"}, Integer(2)));
+    REQUIRE(formatJson(node) == "1");
+  }
+  {
+    Node node = Integer(1);
+    REQUIRE_THROWS(node.update({"#"}, Integer(2)));
+    REQUIRE(formatJson(node) == "1");
+  }
+  {
+    Node node = Integer(1);
+    REQUIRE_THROWS(node.remove({"a"}));
+  }
+  {
+    // { "a": 1}
+    Node node = Object();
+    // insert a
+    REQUIRE(node.update({"a"}, Integer(1)));
+    REQUIRE(formatJson(node) == "{\"a\":1}");
+    // don't insert b because insert=false
+    REQUIRE_FALSE(node.update({"b"}, Integer(2), false));
+    REQUIRE(formatJson(node) == "{\"a\":1}");
+
+    // update a 1->3
+    REQUIRE(node.update({"a"}, Integer(3)));
+    REQUIRE(formatJson(node) == "{\"a\":3}");
+
+    // don't update subpath of a
+    REQUIRE_THROWS(node.update({"a", "b", "e"}, Integer(4)));
+    REQUIRE(formatJson(node) == "{\"a\":3}");
+
+    // insert b {"e": 4}
+    REQUIRE(node.update({"b", "e"}, Integer(4)));
+    REQUIRE(formatJson(node) == "{\"a\":3,\"b\":{\"e\":4}}");
+
+    // insert c [1]
+    REQUIRE(node.update({"c", "#"}, Integer(4)));
+    REQUIRE(formatJson(node) == "{\"a\":3,\"b\":{\"e\":4},\"c\":[4]}");
+
+    // remove c[0]
+    REQUIRE_FALSE(node.remove({"c/0"}));
+    REQUIRE(node.remove({"c", "0"}));
+    REQUIRE(formatJson(node) == "{\"a\":3,\"b\":{\"e\":4},\"c\":[]}");
+    REQUIRE(node.remove({"c"}));
+    REQUIRE(formatJson(node) == "{\"a\":3,\"b\":{\"e\":4}}");
+
+    // remove b/e
+    REQUIRE(node.remove({"b", "e"}));
+    REQUIRE(formatJson(node) == "{\"a\":3,\"b\":{}}");
+
+    // remove a
+    REQUIRE(node.remove({"a"}));
+    REQUIRE(formatJson(node) == "{\"b\":{}}");
+  }
+  {
+    // [1,2]
+    Node node = Array();
+
+    // attempt to update undefined index
+    REQUIRE_THROWS(node.update({"0"}, Integer(3)));
+
+    // [1]
+    REQUIRE(node.update({"#"}, Integer(1)));
+    REQUIRE(formatJson(node) == "[1]");
+
+    // [1,2]
+    REQUIRE(node.update({"#"}, Integer(2)));
+    REQUIRE(formatJson(node) == "[1,2]");
+
+    // [3,2]
+    REQUIRE(node.update({"0"}, Integer(3)));
+    REQUIRE(formatJson(node) == "[3,2]");
+
+    // attempt to update undefined paths
+    REQUIRE_THROWS(node.update({"b"}, Integer(2)));
+    REQUIRE_THROWS(node.update({"1", "a", "d"}, Integer(3)));
+
+    // [3, {}]
+    REQUIRE(node.update({"1"}, Object()));
+    REQUIRE(formatJson(node) == "[3,{}]");
+
+    // [3, {"d": {"e": 4}}]
+    REQUIRE(node.update({"1", "d", "e"}, Integer(4)));
+    REQUIRE(formatJson(node) == "[3,{\"d\":{\"e\":4}}]");
+
+    // [3, {"d": {"e": 4}}, {"d":5}]
+    REQUIRE(node.update({"#", "d"}, Integer(5)));
+    REQUIRE(formatJson(node) == "[3,{\"d\":{\"e\":4}},{\"d\":5}]");
+
+    // [3, {"d": {}}, {"d":5}]
+    REQUIRE(node.remove({"1", "d", "e"}));
+    REQUIRE(formatJson(node) == "[3,{\"d\":{}},{\"d\":5}]");
+
+    // [3, {"d":5}]
+    REQUIRE(node.remove({"1"}));
+    REQUIRE(formatJson(node) == "[3,{\"d\":5}]");
+  }
 }
