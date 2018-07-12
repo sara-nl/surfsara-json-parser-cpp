@@ -63,8 +63,7 @@ inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
   auto itr = lookup.find(k);
   if(itr == lookup.end())
   {
-    /* @todo: impl. Undefined type */
-    return Null();
+    return Undefined();
   }
   auto itr2 = data.find(itr->second);
   if(itr2 != data.end())
@@ -73,19 +72,17 @@ inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
   }
   else
   {
-    /* @todo: impl. Undefined type */
-    return Null();
+    return Undefined();
   }
 }
 
 inline surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k)
 {
-  /* @todo: impl. Undefined type */
-  static Node null = Null();
+  static Node undef = Undefined();
   auto itr = lookup.find(k);
   if(itr == lookup.end())
   {
-    return null;
+    return undef;
   }
   auto itr2 = data.find(itr->second);
   if(itr2 != data.end())
@@ -94,9 +91,29 @@ inline surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k)
   }
   else
   {
-    return null;
+    return undef;
   }
 }
+
+inline const surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k) const
+{
+  static Node undef = Undefined();
+  auto itr = lookup.find(k);
+  if(itr == lookup.end())
+  {
+    return undef;
+  }
+  auto itr2 = data.find(itr->second);
+  if(itr2 != data.end())
+  {
+    return itr2->second.second;
+  }
+  else
+  {
+    return undef;
+  }
+}
+
 
 inline bool surfsara::ast::Object::modify(const String & key, std::function<void(Node & node)> lambda)
 {

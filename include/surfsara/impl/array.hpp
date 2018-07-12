@@ -88,5 +88,10 @@ inline surfsara::ast::Node & surfsara::ast::Array::operator[](std::size_t i)
   return data.at(i);
 }
 
+inline const surfsara::ast::Node & surfsara::ast::Array::operator[](std::size_t i) const
+{
+  return data.at(i);
+}
+
 
 

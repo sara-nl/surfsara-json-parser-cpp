@@ -52,6 +52,11 @@ namespace surfsara
           ost << "null";
         }
 
+        void operator()(const Undefined & n) const
+        {
+          ost << "null";
+        }
+
         void operator()(const Integer & i) const
         {
           ost << i;
