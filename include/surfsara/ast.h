@@ -197,8 +197,26 @@ namespace surfsara
       inline bool operator!=(const Node & rhs) const;
 
       inline Node find(const std::string & path) const;
+      inline Node find(const std::string & path,
+                       const std::function<bool(const Node & root,
+                                                const std::vector<std::string> & path)> & pred) const;
+      inline Node find(const std::string & path,
+                       const std::function<bool(const Node & node)> & pred) const;
+
       inline Node find(const std::vector<std::string> & path) const;
-      
+      inline Node find(const std::vector<std::string> & path,
+                       const std::function<bool(const Node & root,
+                                                const std::vector<std::string> & path)> & pred) const;
+      inline Node find(const std::vector<std::string> & path,
+                       const std::function<bool(const Node & node)> & pred) const;
+
+      inline void forEach(const std::string & path,
+                          const std::function<void(const Node & root,
+                                                   const std::vector<std::string> & path)> & func) const;
+      inline void forEach(const std::vector<std::string> & path,
+                          const std::function<void(const Node & root,
+                                                   const std::vector<std::string> & path)> & func) const;
+
       inline bool update(const std::string & path,
                          const Node & value,
                          bool insert=true);
@@ -258,8 +276,18 @@ namespace surfsara
 
       inline static std::size_t getIndexFromString(const std::string & str,
                                                    const std::vector<std::string> & path);
-      inline Node findImpl(const std::vector<std::string> & path,
+      inline Node findImpl(const Node & root,
+                           std::vector<std::string> & realPath,
+                           const std::vector<std::string> & path,
+                           const std::function<bool(const Node & root,
+                                                    const std::vector<std::string> & path)> & pred,
                            std::size_t pos) const;
+      inline void forEachImpl(const Node & root,
+                              std::vector<std::string> & realPath,
+                              const std::vector<std::string> & path,
+                              const std::function<void(const Node & root,
+                                                       const std::vector<std::string> & path)> & func,
+                              std::size_t pos) const;
 
       inline bool removeImpl(const Node & root,
                              std::vector<std::string> & realPath,
