@@ -432,6 +432,25 @@ SCENARIO("bulk update operations", "[Node]")
                                                Pair("h", String("val_f_0_h")) },
                                        Integer(2),
                                        String("val_f_2")})};
+    WHEN("looped over various paths")
+    {
+      {
+        std::vector<std::string> paths;
+        node.forEach("*", [&paths](const Node & root,
+                                   const std::vector<std::string> & path) {
+                       paths.push_back(boost::algorithm::join(path, "/"));
+                     });
+        REQUIRE(paths == std::vector<std::string>{"a", "b", "f"});
+      }
+      {
+        std::vector<std::string> paths;
+        node.forEach("f/*", [&paths](const Node & root,
+                                   const std::vector<std::string> & path) {
+                       paths.push_back(boost::algorithm::join(path, "/"));
+                     });
+        REQUIRE(paths == std::vector<std::string>{ "f/0", "f/1", "f/2" });
+      }
+    }
     WHEN("sub element is not updated")
     {
       REQUIRE(node.find("f/0/g") == String("val_f_0_g"));

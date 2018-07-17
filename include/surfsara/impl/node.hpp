@@ -116,6 +116,87 @@ typename Visitor::result_type surfsara::ast::Node::apply_visitor(Visitor & visit
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// foreach
+//
+////////////////////////////////////////////////////////////////////////////////
+inline void surfsara::ast::Node::forEach(const std::string & path,
+                                         const std::function<void(const Node & root,
+                                                                  const std::vector<std::string> & path)> & func) const
+{
+  std::vector<std::string> vpath;
+  boost::split(vpath, path, boost::is_any_of("/"));
+  return forEach(vpath, func);
+}
+
+inline void surfsara::ast::Node::forEach(const std::vector<std::string> & path,
+                                         const std::function<void(const Node & root,
+                                                                  const std::vector<std::string> & path)> & func) const
+{
+  std::vector<std::string> realPath;
+  forEachImpl(*this, realPath, path, func, 0);
+}
+
+inline void surfsara::ast::Node::forEachImpl(const Node & root,
+                                             std::vector<std::string> & realPath,
+                                             const std::vector<std::string> & path,
+                                             const std::function<void(const Node & root,
+                                                                      const std::vector<std::string> & path)> & func,
+                                             std::size_t pos) const
+{
+  if(pos < path.size())
+  {
+    if(isA<Array>())
+    {
+      std::string key = path[pos];
+      if(key == "*")
+      {
+        for(std::size_t index = 0; index < as<Array>().size(); index++)
+        {
+          realPath.push_back(std::to_string(index));
+          as<Array>()[index].forEachImpl(root, realPath, path, func, pos + 1);
+          realPath.pop_back();
+        }
+      }
+      else
+      {
+        std::size_t index = getIndexFromString(key, path);
+        if(as<Array>().size())
+        {
+          realPath.push_back(key);
+          as<Array>()[index].forEachImpl(root, realPath, path, func, pos + 1);
+          realPath.pop_back();
+        }
+      }
+    }
+    else if(isA<Object>())
+    {
+      std::string key = path[pos];
+      if(key == "*")
+      {
+        as<Object>().forEach([&root, &realPath, &func, &path, pos](const std::string & key,
+                                                                   const Node & n) 
+                    {
+                      realPath.push_back(key);
+                      n.forEachImpl(root, realPath, path, func, pos + 1);
+                      realPath.pop_back();
+                    });
+      }
+      else if(as<Object>().has(key))
+      {
+        realPath.push_back(key);
+        as<Object>()[key].forEachImpl(root, realPath, path, func, pos + 1);
+        realPath.pop_back();
+      }
+    }
+  }
+  else if(pos == path.size())
+  {
+    func(root, realPath);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // find
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,12 +207,51 @@ inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path) c
   return find(vpath);
 }
 
-inline surfsara::ast::Node surfsara::ast::Node::find(const std::vector<std::string> & path) const
+inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path,
+                                                     const std::function<bool(const Node & root,
+                                                                              const std::vector<std::string> & path)> & pred) const
 {
-  return findImpl(path, 0);
+  std::vector<std::string> vpath;
+  boost::split(vpath, path, boost::is_any_of("/"));
+  return find(vpath, pred);
 }
 
-inline surfsara::ast::Node surfsara::ast::Node::findImpl(const std::vector<std::string> & path,
+inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path,
+                                                     const std::function<bool(const Node & node)> & pred) const
+{
+  std::vector<std::string> vpath;
+  boost::split(vpath, path, boost::is_any_of("/"));
+  return find(vpath,
+              [pred](const Node & root, const std::vector<std::string> & path){ return pred(root.find(path));});
+}
+
+inline surfsara::ast::Node surfsara::ast::Node::find(const std::vector<std::string> & path) const
+{
+  std::vector<std::string> realPath;
+  return findImpl(*this, realPath, path, [](const Node &, const std::vector<std::string> &){ return true; }, 0);
+}
+
+inline surfsara::ast::Node surfsara::ast::Node::find(const std::vector<std::string> & path,
+                                                     const std::function<bool(const Node & root,
+                                                                              const std::vector<std::string> & path)> & pred) const
+{
+  std::vector<std::string> realPath;
+  return findImpl(*this, realPath, path, pred, 0);
+}
+
+inline surfsara::ast::Node surfsara::ast::Node::find(const std::vector<std::string> & path,
+                                                     const std::function<bool(const Node & node)> & pred) const
+{
+  return find(path,
+              [pred](const Node & root, const std::vector<std::string> & path){ return pred(root.find(path));});
+}
+
+
+inline surfsara::ast::Node surfsara::ast::Node::findImpl(const Node & root,
+                                                         std::vector<std::string> & realPath,
+                                                         const std::vector<std::string> & path,
+                                                         const std::function<bool(const Node & root,
+                                                                                  const std::vector<std::string> & path)> & pred,
                                                          std::size_t pos) const
 {
   if(pos < path.size())
@@ -147,7 +267,9 @@ inline surfsara::ast::Node surfsara::ast::Node::findImpl(const std::vector<std::
       {
         for(std::size_t index = 0; index < as<Array>().size(); index++)
         {
-          auto tmp = as<Array>()[index].findImpl(path, pos + 1);
+          realPath.push_back(std::to_string(index));
+          auto tmp = as<Array>()[index].findImpl(root, realPath, path, pred, pos + 1);
+          realPath.pop_back();
           if(tmp != Undefined())
           {
             return tmp;
@@ -160,7 +282,10 @@ inline surfsara::ast::Node surfsara::ast::Node::findImpl(const std::vector<std::
         std::size_t index = getIndexFromString(key, path);
         if(index < as<Array>().size())
         {
-          return  as<Array>()[index].findImpl(path, pos + 1);
+          realPath.push_back(std::to_string(index));
+          auto ret = as<Array>()[index].findImpl(root, realPath, path, pred, pos + 1);
+          realPath.pop_back();
+          return ret;
         }
         else
         {
@@ -173,19 +298,24 @@ inline surfsara::ast::Node surfsara::ast::Node::findImpl(const std::vector<std::
       if(key == "*")
       {
         Node ret = Undefined();
-        as<Object>().forEach([&ret, &path, pos](const std::string & key,
-                                                const Node & node) 
+        as<Object>().forEach([&root, &ret, &pred, &realPath, &path, pos](const std::string & key,
+                                                                         const Node & node) 
                              {
                                if(ret == Undefined())
                                {
-                                 ret = node.findImpl(path, pos + 1);
+                                 realPath.push_back(key);
+                                 ret = node.findImpl(node, realPath, path, pred, pos + 1);
+                                 realPath.pop_back();
                                }
                              });
         return ret;
       }
       else if(as<Object>().has(key))
       {
-        return as<Object>()[key].findImpl(path, pos + 1);
+        realPath.push_back(key);
+        auto ret = as<Object>()[key].findImpl(root, realPath, path, pred, pos + 1);
+        realPath.pop_back();
+        return ret;
       }
       else
       {
@@ -197,7 +327,7 @@ inline surfsara::ast::Node surfsara::ast::Node::findImpl(const std::vector<std::
       return Undefined();
     }
   }
-  else if(pos == path.size())
+  else if(pos == path.size() && pred(root, realPath))
   {
     return *this;
   }
@@ -471,10 +601,50 @@ inline bool surfsara::ast::Node::removeArrayImpl(Array & arr,
   if(key == "*")
   {
     bool ret = false;
+    if(pos + 1 == path.size())
+    {
+      for(std::size_t index = 0; index < arr.size();)
+      {
+        realPath.push_back(std::to_string(index));
+        bool pred = predicate(root, realPath);
+        if(pred)
+        {
+          arr.remove(index);
+        }
+        else
+        {
+          index++;
+        }
+        ret|= pred;
+        realPath.pop_back();
+      }
+    }
+    else
+    {
+      for(std::size_t index = 0; index < arr.size(); index++)
+      {
+        realPath.push_back(std::to_string(index));
+        ret |= arr[index].removeImpl(root, realPath, path, predicate, pos + 1, true);
+        realPath.pop_back();
+      }
+    }
+    return ret;
     for(std::size_t index = 0; index < arr.size(); index++)
     {
       realPath.push_back(std::to_string(index));
-      ret |= arr[index].removeImpl(root, realPath, path, predicate, pos + 1, true);
+      if(pos + 1 == path.size())
+      {
+        bool pred = predicate(root, realPath);
+        if(pred)
+        {
+          //arr.remove(index);
+        }
+        ret|= pred;
+      }
+      else
+      {
+        ret |= arr[index].removeImpl(root, realPath, path, predicate, pos + 1, true);
+      }
       realPath.pop_back();
     }
     return ret;
@@ -542,7 +712,10 @@ inline bool surfsara::ast::Node::removeObjectImpl(Object & obj,
       }
       else
       {
-        return obj[path[pos]].removeImpl(root, realPath, path, predicate, pos + 1, ignoreUndef);
+        realPath.push_back(key);
+        auto ret = obj[path[pos]].removeImpl(root, realPath, path, predicate, pos + 1, ignoreUndef);
+        realPath.pop_back();
+        return ret;
       }
     }
     return false;
