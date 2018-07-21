@@ -29,9 +29,11 @@ SOFTWARE.
 #pragma once
 #include <stdexcept>
 #define BOOST_SPIRIT_UNICODE
+#include <boost/bind.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/locale.hpp>
+#include <boost/version.hpp>
 #include <functional>
 
 namespace surfsara
@@ -96,17 +98,30 @@ namespace surfsara
       boost::spirit::qi::rule<I, Object(), space_type >  object;
       boost::spirit::qi::rule<I, Pair(),  space_type >   keyValuePair;
       boost::spirit::qi::rule<I, String()>               str;
-      boost::spirit::qi::rule<I, void(String&)>     escaped;
-      boost::spirit::qi::rule<I, void(String&)>     unicode;
+      boost::spirit::qi::rule<I, void(String&)>          unicode;
       boost::phoenix::function<details::Decoder>         decoder;
-      boost::phoenix::function<details::UnicodeDecoder>  unicodeDecoder;
-      escaped = ('\\' > char_("\"\\/bfnrt"))[decoder(_r1, _1)];
-      unicode = ("\\u" > hexParser)[unicodeDecoder(_r1, _1)];
+      boost::spirit::qi::symbols<char,char>              escaped;
+      escaped.add("\\\\" , '\\')
+                 ("\\\"" , '"' )
+                 ("\\n"  , '\n')
+                 ("\\r"  , '\r')
+                 ("\\b"  , '\b')
+                 ("\\f"  , '\f')
+                 ("\\t"  , '\t')
+                 ("\\u"  , '\0');
 
-      str =
-        lexeme[lit('"') >>
-               *( unicode(_val) | escaped(_val)  | (char_ - '"' - '\\')[ _val += _1]) >>
-               lit('"')];
+#if BOOST_VERSION < 106500
+      str = lexeme[lit('"') >>
+                   *((escaped | char_) - '"') >>
+                   lit('"')];
+
+#else
+      boost::phoenix::function<details::UnicodeDecoder>  unicodeDecoder;
+      unicode = ("\\u" > hexParser)[unicodeDecoder(_r1, _1)];
+      str = lexeme[lit('"') >>
+                   *( unicode(_val) | ((escaped | char_) - '"')[ _val += _1]) >>
+                   lit('"')];
+#endif
       keyValuePair = (str >> ':' >> value)
         [boost::spirit::qi::_val = boost::phoenix::construct<Pair>(boost::spirit::qi::_1,
                                                                    boost::spirit::qi::_2)];
