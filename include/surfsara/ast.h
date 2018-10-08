@@ -134,6 +134,8 @@ namespace surfsara
       inline void forEach(std::function<void(const String &, Node & node)> lambda);
       inline void forEach(std::function<void(const String &, const Node & node)> lambda) const;
 
+      inline Node values() const;
+      inline Node keys() const;
       /**
        * Remove the key if exists
        * return if the keys was found
