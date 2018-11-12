@@ -108,6 +108,7 @@ namespace surfsara
       
       Object();
       Object(const std::initializer_list<std::pair<String, Node>> & l);
+      inline bool empty() const;
       inline bool set(const String & k, const Node & node);
       inline bool set(const String & k, Node && node);
       inline bool has(const String & v) const;

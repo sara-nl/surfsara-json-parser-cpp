@@ -43,6 +43,11 @@ inline surfsara::ast::Object::Object(const std::initializer_list<std::pair<Strin
   }
 }
 
+inline bool surfsara::ast::Object::empty() const
+{
+  return data.empty();
+}
+
 inline bool surfsara::ast::Object::set(const String & k, const Node & node)
 {
   return setInternal(k, node);
