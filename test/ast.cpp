@@ -236,6 +236,11 @@ TEST_CASE("test object", "[Node]")
           "    \"b\": 2\n"
           "  }\n"
           "}");
+  REQUIRE(formatJson(object.as<Object>().values()) ==
+          "[null,1,true,1.0,\"value\",[1,2,3],{\"a\":1,\"b\":2}]");
+  REQUIRE(formatJson(object.as<Object>().keys()) ==
+          "[\"null\",\"integer\",\"boolean\",\"float\",\"string\",\"array\",\"object\"]");
+
 }
 
 TEST_CASE("object operations", "[Node]")

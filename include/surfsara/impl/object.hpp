@@ -151,6 +151,27 @@ inline void surfsara::ast::Object::forEach(std::function<void(const String & key
   }
 }
 
+inline surfsara::ast::Node surfsara::ast::Object::values() const
+{
+  surfsara::ast::Array ret;
+  for(auto & p : data)
+  {
+    ret.pushBack(p.second.second);
+  }
+  return surfsara::ast::Node(ret);
+}
+
+inline surfsara::ast::Node surfsara::ast::Object::keys() const
+{
+  surfsara::ast::Array ret;
+  for(auto & p : data)
+  {
+    ret.pushBack(p.second.first);
+  }
+  return surfsara::ast::Node(ret);
+}
+
+
 inline bool surfsara::ast::Object::remove(const String & key)
 {
   auto itr = lookup.find(key);
