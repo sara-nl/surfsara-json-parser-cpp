@@ -28,7 +28,6 @@ SOFTWARE.
 
 using namespace surfsara::ast;
 
-
 TEST_CASE("test null atom", "[Node]")
 {
   Null null;
@@ -89,7 +88,7 @@ TEST_CASE("test integer atom", "[Node]")
   REQUIRE(formatJson(n2) == "2");
 }
 
-TEST_CASE("test boolea atom", "[Node]")
+TEST_CASE("test boolean atom", "[Node]")
 {
   Node f(false);
   Node t(true);
@@ -163,6 +162,43 @@ TEST_CASE("test string escape unicode", "[Node]")
 {
   REQUIRE(Node(u8"\u0141 \u0143").as<String>() == u8"\u0141 \u0143");
   REQUIRE(formatJson(Node(u8"\u0141 \u0143")) == u8"\"\u0141 \u0143\"");
+}
+
+TEST_CASE("test value", "[Node]")
+{
+  using Value = Node::Value;
+  {
+    Value value = Null();
+    REQUIRE(value.isA<Null>());
+  }
+  {
+    Node::Value value = Undefined();
+    REQUIRE(value.isA<Undefined>());
+  }
+  {
+    Value value = Integer(1);
+    REQUIRE(value.isA<Integer>());
+  }
+  {
+    Value value = Boolean(true);
+    REQUIRE(value.isA<Boolean>());
+  }
+  {
+    Value value = Float(1.2);
+    REQUIRE(value.isA<Float>());
+  }
+  {
+    Value value = String("test");
+    REQUIRE(value.isA<String>());
+  }
+  {
+    Value value = Array();
+    REQUIRE(value.isA<Array>());
+  }
+  {
+    Value value = Object();
+    REQUIRE(value.isA<Object>());
+  }
 }
 
 TEST_CASE("test array", "[Node]")
@@ -240,14 +276,14 @@ TEST_CASE("test object", "[Node]")
           "[null,1,true,1.0,\"value\",[1,2,3],{\"a\":1,\"b\":2}]");
   REQUIRE(formatJson(object.as<Object>().keys()) ==
           "[\"null\",\"integer\",\"boolean\",\"float\",\"string\",\"array\",\"object\"]");
-
 }
 
 TEST_CASE("object operations", "[Node]")
 {
   Node obj{Pair{"name", "John"}, Pair{"age", 30}, Pair{"car", Null()}};
   REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null}");
-  obj.as<Object>().set("lastname", "Smith");
+  REQUIRE(obj.as<Object>().has("name"));
+  REQUIRE(obj.as<Object>().set("lastname", "Smith"));
   REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":30,\"car\":null,\"lastname\":\"Smith\"}");
   REQUIRE(obj.as<Object>().has("name"));
   REQUIRE(obj.as<Object>().has("lastname"));

@@ -28,7 +28,6 @@ SOFTWARE.
 /////////////////////////////////////////////////////
 #pragma once
 #define BOOST_SPIRIT_UNICODE
-#include <boost/variant/apply_visitor.hpp>
 #include <boost/regex/pending/unicode_iterator.hpp>
 #include <boost/spirit/include/qi.hpp>
 
@@ -145,7 +144,8 @@ namespace surfsara
               {
                 putSpaceNl(ost, locIndent);
               }
-              boost::apply_visitor(detials::JsonNodeVisitor(ost, pretty, indent), node);
+              detials::JsonNodeVisitor visitor(ost, pretty, indent);
+              node.applyVisitor(visitor);
           });
           if(pretty)
           {
@@ -174,13 +174,19 @@ namespace surfsara
                 putSpaceNl(ost, locIndent);
               }
               Node n(key);
-              boost::apply_visitor(detials::JsonNodeVisitor(ost, false, 0), n);
+              {
+                detials::JsonNodeVisitor visitor(ost, false, 0);
+                n.applyVisitor(visitor);
+              }
               ost << ":";
               if(pretty)
               {
                 ost.put(' ');
               }
-              boost::apply_visitor(detials::JsonNodeVisitor(ost, pretty, locIndent), node);
+              {
+                detials::JsonNodeVisitor visitor(ost, pretty, locIndent);
+                node.applyVisitor(visitor);
+              }
             });
           if(pretty)
           {
@@ -212,7 +218,8 @@ void surfsara::ast::formatJson(std::ostream & ost,
                                bool pretty,
                                std::size_t indent)
 {
-  boost::apply_visitor(detials::JsonNodeVisitor(ost, pretty, indent), node);
+  detials::JsonNodeVisitor visitor(ost, pretty, indent);
+  node.applyVisitor(visitor);
 }
 
 

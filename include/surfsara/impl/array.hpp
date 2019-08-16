@@ -93,5 +93,9 @@ inline const surfsara::ast::Node & surfsara::ast::Array::operator[](std::size_t 
   return data.at(i);
 }
 
+inline void surfsara::ast::Array::swap(Array & rhs)
+{
+  data.swap(rhs.data);
+}
 
 

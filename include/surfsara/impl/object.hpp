@@ -237,3 +237,9 @@ inline void surfsara::ast::Object::insert(iterator itr, const Pair & value)
   setInternal(value.first, value.second);
 }
 
+inline void surfsara::ast::Object::swap(Object & rhs)
+{
+  data.swap(rhs.data);
+  lookup.swap(rhs.lookup);
+}
+

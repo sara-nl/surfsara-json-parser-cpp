@@ -45,6 +45,133 @@ inline surfsara::ast::PathError::PathError(const std::vector<std::string> & _pat
   msg = std::string("path error: ") + tmp + std::string(" ") + _msg;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// Node::Value
+//
+///////////////////////////////////////////////////////////////////////////////
+inline surfsara::ast::Node::Value::Value(const Null & n) : typeIndex(std::type_index(typeid(Null)))
+{
+}
+
+inline surfsara::ast::Node::Value::Value(const Undefined & u) : typeIndex(std::type_index(typeid(Undefined)))
+{
+}
+
+inline surfsara::ast::Node::Value::Value(const Boolean & b) : typeIndex(std::type_index(typeid(Boolean)))
+{
+  v.booleanValue = b;
+}
+
+inline surfsara::ast::Node::Value::Value(const Integer & i) : typeIndex(std::type_index(typeid(Integer)))
+{
+  v.integerValue = i;
+}
+
+inline surfsara::ast::Node::Value::Value(const Float & f) : typeIndex(std::type_index(typeid(Float)))
+{
+  v.floatValue = f;
+}
+
+inline surfsara::ast::Node::Value::Value(const String & s) : typeIndex(std::type_index(typeid(String)))
+{
+  v.stringValue = new String(s);
+}
+
+inline surfsara::ast::Node::Value::Value(const Array & a) : typeIndex(std::type_index(typeid(Array)))
+{
+  v.arrayValue = new Array(a);
+}
+
+inline surfsara::ast::Node::Value::Value(Array && a) : typeIndex(std::type_index(typeid(Array)))
+{
+  v.arrayValue = new Array();
+  v.arrayValue->swap(a);
+}
+
+inline surfsara::ast::Node::Value::Value(const Object & o) : typeIndex(std::type_index(typeid(Object)))
+{
+  v.objectValue = new Object(o);
+}
+
+inline surfsara::ast::Node::Value::Value(Object && o) : typeIndex(std::type_index(typeid(Object)))
+{
+  v.objectValue = new Object();
+  v.objectValue->swap(o);
+}
+
+inline surfsara::ast::Node::Value::Value(const Value & rhs) : typeIndex(rhs.typeIndex)
+{
+  init(rhs);
+}
+
+inline surfsara::ast::Node::Value::Value(Value && rhs) : typeIndex(rhs.typeIndex)
+{
+  v = rhs.v;
+  rhs.typeIndex = std::type_index(typeid(Null));
+}
+
+inline surfsara::ast::Node::Value & surfsara::ast::Node::Value::operator=(const Value & rhs)
+{
+  cleanup();
+  typeIndex = rhs.typeIndex;
+  init(rhs);
+  return *this;
+}
+
+inline surfsara::ast::Node::Value::~Value()
+{
+  cleanup();
+}
+
+template<typename T>
+inline bool surfsara::ast::Node::Value::isA() const
+{
+  return typeIndex == std::type_index(typeid(T));
+}
+
+inline void surfsara::ast::Node::Value::init(const Value & rhs)
+{
+  if(rhs.typeIndex == std::type_index(typeid(String)))
+  {
+    v.stringValue = new String(*rhs.v.stringValue);
+  }
+  else if(rhs.typeIndex == std::type_index(typeid(Array)))
+  {
+    v.arrayValue = new Array(*rhs.v.arrayValue);
+  }
+  else if(rhs.typeIndex == std::type_index(typeid(Object)))
+  {
+    v.objectValue = new Object(*rhs.v.objectValue);
+  }
+  else
+  {
+    v = rhs.v;
+  }
+}
+
+inline void surfsara::ast::Node::Value::cleanup()
+{
+  if(typeIndex == std::type_index(typeid(String)))
+  {
+    delete v.stringValue;
+  }
+  else if(typeIndex == std::type_index(typeid(Array)))
+  {
+    delete v.arrayValue;
+  }
+  else if(typeIndex == std::type_index(typeid(Object)))
+  {
+    delete v.objectValue;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Node
+//
+///////////////////////////////////////////////////////////////////////////////
+
 inline surfsara::ast::Node::Node() : value(Null()) {}
 
 template<typename T> inline
@@ -72,19 +199,150 @@ inline surfsara::ast::Node::Node(std::initializer_list<Node> a)
 template<typename T>
 bool surfsara::ast::Node::isA() const
 {
-  return boost::get<T>(&value) != nullptr;
+  return value.isA<T>();
 }
+
+namespace surfsara
+{
+  namespace ast
+  {
+    namespace details
+    {
+      template<typename TARGET>
+      struct Converter
+      {
+      };
+
+      template<>
+      struct Converter<Null>
+      {
+        static const Null & convert(const Node::Value & v)
+        {
+          return v.v.nullValue;
+        }
+
+        static Null & convert(Node::Value & v)
+        {
+          return v.v.nullValue;
+        }
+      };
+
+      template<>
+      struct Converter<Undefined>
+      {
+        static const Undefined & convert(const Node::Value & v)
+        {
+          return v.v.undefinedValue;
+        }
+
+        static Undefined & convert(Node::Value & v)
+        {
+          return v.v.undefinedValue;
+        }
+      };
+
+      template<>
+      struct Converter<Boolean>
+      {
+        static const Boolean & convert(const Node::Value & v)
+        {
+          return v.v.booleanValue;
+        }
+
+        static Boolean & convert(Node::Value & v)
+        {
+          return v.v.booleanValue;
+        }
+      };
+
+      template<>
+      struct Converter<Integer>
+      {
+        static const Integer & convert(const Node::Value & v)
+        {
+          return v.v.integerValue;
+        }
+
+        static Integer & convert(Node::Value & v)
+        {
+          return v.v.integerValue;
+        }
+      };
+
+      template<>
+      struct Converter<Float>
+      {
+        static const Float & convert(const Node::Value & v)
+        {
+          return v.v.floatValue;
+        }
+
+        static Float & convert(Node::Value & v)
+        {
+          return v.v.floatValue;
+        }
+      };
+
+      template<>
+      struct Converter<String>
+      {
+        static const String  & convert(const Node::Value & v)
+        {
+          return *v.v.stringValue;
+        }
+
+        static String & convert(Node::Value & v)
+        {
+          return *v.v.stringValue;
+        }
+      };
+
+      template<>
+      struct Converter<Array>
+      {
+        static const Array  & convert(const Node::Value & v)
+        {
+          return *v.v.arrayValue;
+        }
+
+        static Array  & convert(Node::Value & v)
+        {
+          return *v.v.arrayValue;
+        }
+
+      };
+
+      template<>
+      struct Converter<Object>
+      {
+        static const Object & convert(const Node::Value & v)
+        {
+          return *v.v.objectValue;
+        }
+
+        static Object & convert(Node::Value & v)
+        {
+          return *v.v.objectValue;
+        }
+      };
+    }
+  }
+}
+
 
 template<typename T>
 const T& surfsara::ast::Node::as() const
 {
-  return boost::get<T>(value);
+  typedef details::Converter<T> converter;
+  return converter::convert(value);
 }
 
 template<typename T>
 T& surfsara::ast::Node::as()
 {
-  return boost::get<T>(value);
+  typedef details::Converter<T> converter;
+  return converter::convert(value);
+  //return boost::get<T>(value);
 }
 
 inline std::string surfsara::ast::Node::typeName() const
@@ -100,18 +358,82 @@ inline std::string surfsara::ast::Node::typeName() const
 
 inline bool surfsara::ast::Node::operator==(const Node & rhs) const
 {
-  return value == rhs.value;
+  if(value.typeIndex == rhs.value.typeIndex)
+  {
+    if(value.typeIndex == std::type_index(typeid(Null)) ||
+       value.typeIndex == std::type_index(typeid(Undefined)))
+    {
+      return true;
+    }
+    else if(value.typeIndex == std::type_index(typeid(Boolean)))
+    {
+      return value.v.booleanValue == rhs.value.v.booleanValue;
+    }
+    else if(value.typeIndex == std::type_index(typeid(Integer)))
+    {
+      return value.v.integerValue == rhs.value.v.integerValue;
+    }
+    else if(value.typeIndex == std::type_index(typeid(Float)))
+    {
+      return value.v.floatValue == rhs.value.v.floatValue;
+    }
+    else if(value.typeIndex == std::type_index(typeid(String)))
+    {
+      return *value.v.stringValue == *rhs.value.v.stringValue;
+    }
+    else if(value.typeIndex == std::type_index(typeid(Array)))
+    {
+      return *value.v.arrayValue == *rhs.value.v.arrayValue;
+    }
+    else if(value.typeIndex == std::type_index(typeid(Object)))
+    {
+      return *value.v.objectValue == *rhs.value.v.objectValue;
+    }
+  }
+  return false;
 }
 
 inline bool surfsara::ast::Node::operator!=(const Node & rhs) const
 {
-  return !(value == rhs.value);
+  return !(operator==(rhs));
+  //return !(value == rhs.value);
 }
 
-template<typename Visitor> 
-typename Visitor::result_type surfsara::ast::Node::apply_visitor(Visitor & visitor) const
+template<typename Visitor>
+void surfsara::ast::Node::applyVisitor(Visitor & visitor) const
 {
-  return boost::apply_visitor(visitor, value);
+  if(isA<Null>())
+  {
+    visitor(as<Null>());
+  }
+  else if(isA<Undefined>())
+  {
+    visitor(as<Undefined>());
+  }
+  else if(isA<Boolean>())
+  {
+    visitor(as<Boolean>());
+  }
+  else if(isA<Integer>())
+  {
+    visitor(as<Integer>());
+  }
+  else if(isA<Float>())
+  {
+    visitor(as<Float>());
+  }
+  else if(isA<String>())
+  {
+    visitor(as<String>());
+  }
+  else if(isA<Array>())
+  {
+    visitor(as<Array>());
+  }
+  else if(isA<Object>())
+  {
+    visitor(as<Object>());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -627,25 +949,6 @@ inline bool surfsara::ast::Node::removeArrayImpl(Array & arr,
         ret |= arr[index].removeImpl(root, realPath, path, predicate, pos + 1, true);
         realPath.pop_back();
       }
-    }
-    return ret;
-    for(std::size_t index = 0; index < arr.size(); index++)
-    {
-      realPath.push_back(std::to_string(index));
-      if(pos + 1 == path.size())
-      {
-        bool pred = predicate(root, realPath);
-        if(pred)
-        {
-          //arr.remove(index);
-        }
-        ret|= pred;
-      }
-      else
-      {
-        ret |= arr[index].removeImpl(root, realPath, path, predicate, pos + 1, true);
-      }
-      realPath.pop_back();
     }
     return ret;
   }

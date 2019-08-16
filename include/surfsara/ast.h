@@ -22,7 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #pragma once
-#include <boost/variant.hpp>
+
+#include <typeinfo>
+#include <typeindex>
 #include <string>
 #include <vector>
 #include <list>
@@ -36,6 +38,12 @@ namespace surfsara
 {
   namespace ast
   {
+    namespace details
+    {
+      template<typename TARGET>
+      struct Converter;
+    }
+
     class Node;
     
     typedef int64_t Integer;
@@ -91,6 +99,7 @@ namespace surfsara
       inline iterator end();
       inline Node & operator[](std::size_t i);
       inline const Node & operator[](std::size_t i) const;
+      inline void swap(Array & rhs);
     private:
       std::vector<Node> data;
     };
@@ -155,6 +164,7 @@ namespace surfsara
       inline iterator end();
       inline void insert(iterator itr, const std::pair<String, Node> & value);
 
+      inline void swap(Object & rhs);
     private:
       template<typename T>
       inline bool setInternal(const String & k, T node);
@@ -250,9 +260,50 @@ namespace surfsara
                                                   const std::vector<std::string> & path)> & pred);
       
       template<typename Visitor> 
-      typename Visitor::result_type apply_visitor(Visitor & visitor) const; 
+      void applyVisitor(Visitor & visitor) const;
 
       inline std::string typeName() const;
+
+      struct Value
+      {
+        template<typename T>
+        class Converter;
+
+        union
+        {
+          Null nullValue;
+          Undefined undefinedValue;
+          Boolean booleanValue;
+          Integer integerValue;
+          Float floatValue;
+          String * stringValue;
+          Array * arrayValue;
+          Object * objectValue;
+        } v;
+        std::type_index typeIndex;
+
+        Value(const Null & n);
+        Value(const Undefined & u);
+        Value(const Boolean & b);
+        Value(const Integer & i);
+        Value(const Float & f);
+        Value(const String & s);
+        Value(const Array & a);
+        Value(Array && a);
+        Value(const Object & o);
+        Value(Object && o);
+        Value(const Value & rhs);
+        Value(Value && rhs);
+        inline Value & operator=(const Value & rhs);
+        ~Value();
+
+        template<typename T>
+        inline bool isA() const;
+
+      private:
+        inline void init(const Value & rhs);
+        inline void cleanup();
+      };
 
     private:
       typedef std::function<bool(const Node & root,
@@ -333,14 +384,6 @@ namespace surfsara
                                    std::size_t pos,
                                    bool ignoreUndef);
       
-      typedef boost::variant<Integer,
-                             Float,
-                             Boolean,
-                             Null,
-                             String,
-                             Array,
-                             Object,
-                             Undefined> Value;
       Value value;
     };
 
