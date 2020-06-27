@@ -28,7 +28,33 @@ SOFTWARE.
 //
 /////////////////////////////////////////////////////
 #include <sstream>
-#include <boost/algorithm/string.hpp>
+#include <iostream>
+namespace surfsara
+{
+  namespace ast
+  {
+    namespace details
+    {
+      inline ::std::vector<::std::string> split(const ::std::string & inp,
+                                                const ::std::string & sep)
+      {
+        ::std::vector<::std::string> ret;
+        ::std::size_t start = 0;
+        ::std::size_t pos = 0;
+        ::std::string token;
+        while((pos = inp.find(sep, start)) != ::std::string::npos)
+        {
+          ret.push_back(::std::string(inp.begin() + start,
+                                      inp.begin() + pos));
+          start = pos + sep.size();
+        }
+        ret.push_back(::std::string(inp.begin() + start,
+                                    inp.end()));
+        return ret;
+      }
+    }
+  }
+}
 
 inline surfsara::ast::PathError::PathError(const std::vector<std::string> & _path,
                                            const std::string & _msg)
@@ -461,9 +487,7 @@ inline void surfsara::ast::Node::forEach(const std::string & path,
                                          const std::function<void(const Node & root,
                                                                   const std::vector<std::string> & path)> & func) const
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return forEach(vpath, func);
+  return forEach(details::split(path, "/"), func);
 }
 
 inline void surfsara::ast::Node::forEach(const std::vector<std::string> & path,
@@ -540,26 +564,21 @@ inline void surfsara::ast::Node::forEachImpl(const Node & root,
 ////////////////////////////////////////////////////////////////////////////////
 inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path) const
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return find(vpath);
+  return find(details::split(path, "/"));
 }
 
 inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path,
                                                      const std::function<bool(const Node & root,
                                                                               const std::vector<std::string> & path)> & pred) const
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return find(vpath, pred);
+  return find(details::split(path, "/"), pred);
 }
 
 inline surfsara::ast::Node surfsara::ast::Node::find(const std::string & path,
                                                      const std::function<bool(const Node & node)> & pred) const
 {
   std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return find(vpath,
+  return find(details::split(path, "/"),
               [pred](const Node & root, const std::vector<std::string> & path){ return pred(root.find(path));});
 }
 
@@ -684,9 +703,7 @@ inline bool surfsara::ast::Node::update(const std::string & path,
                                         const Node & value,
                                         bool insert)
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return update(vpath, value, insert);
+  return update(details::split(path, "/"), value, insert);
 }
 
 inline bool surfsara::ast::Node::update(const std::string & path,
@@ -694,9 +711,7 @@ inline bool surfsara::ast::Node::update(const std::string & path,
                                         bool insert,
                                         const Predicate & predicate)
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return update(vpath, value, insert, predicate);
+  return update(details::split(path, "/"), value, insert, predicate);
 }
 
 inline bool surfsara::ast::Node::update(const std::vector<std::string> & path,
@@ -860,17 +875,13 @@ inline bool surfsara::ast::Node::updateObjectImpl(Object & obj,
 ////////////////////////////////////////////////////////////////////////////////
 inline bool surfsara::ast::Node::remove(const std::string & path)
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return remove(vpath);
+  return remove(details::split(path, "/"));
 }
 
 inline bool surfsara::ast::Node::remove(const std::string & path,
                                         const Predicate & predicate)
 {
-  std::vector<std::string> vpath;
-  boost::split(vpath, path, boost::is_any_of("/"));
-  return remove(vpath, predicate);
+  return remove(details::split(path, "/"), predicate);
 }
 
 
