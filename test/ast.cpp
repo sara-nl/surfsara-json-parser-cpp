@@ -309,6 +309,16 @@ TEST_CASE("object operations", "[Node]")
   REQUIRE(formatJson(obj) == "{\"name\":\"John\",\"age\":32}");
 }
 
+TEST_CASE("object_access_operation", "[Node]")
+{
+  Node obj = Object();
+  obj.as<Object>()["a"] = Integer(1);
+  REQUIRE(obj.as<Object>().size() == 1);
+  REQUIRE(obj.as<Object>().has("a"));
+  REQUIRE(obj.as<Object>()["a"].isA<Integer>());
+  REQUIRE(obj.as<Object>()["a"].as<Integer>() == 1);
+}
+
 TEST_CASE("array operations", "[Node]")
 {
   Node n = Array();
