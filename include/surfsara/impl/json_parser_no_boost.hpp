@@ -647,14 +647,42 @@ namespace surfsara
           {
             std::size_t pos = 0; 
             std::uint32_t u = std::stoul(res, &pos, 16);
-            std::cout << u << std::endl;
             value.pop_back();
             state.back() = STRING;
             std::string & target(value.back().as<String>());
-            target.push_back((char)(( u >>  0) & 0xff));
-            target.push_back((char)(( u >>  8) & 0xff));
-            target.push_back((char)(( u >> 16) & 0xff));
-            target.push_back((char)(( u >> 24) & 0xff));
+            static const uint32_t max_code_point = 0x0010ffffu;
+            static const uint32_t min_lead_surrogate = 0xd800u;
+            static const uint32_t max_lead_surrogate = 0xdbffu;
+            if(u <= max_code_point && (u < min_lead_surrogate || u > max_lead_surrogate))
+            {
+              if (u < 0x80)
+              {
+                target.push_back((unsigned char)(u));
+              }
+              else if (u < 0x800)
+              {
+                target.push_back((u >> 6) | 0xc0);
+                target.push_back((u & 0x3f) | 0x80);
+              }
+              else if (u < 0x10000)
+              {
+                target.push_back((u >> 12) | 0xe0);
+                target.push_back(((u >> 6) & 0x3f) | 0x80);
+                target.push_back((u & 0x3f) | 0x80);
+              }
+              else
+              {
+                // four octets
+                target.push_back((u >> 18) | 0xf0);
+                target.push_back(((u >> 12) & 0x3f) | 0x80);
+                target.push_back(((u >> 6) & 0x3f) | 0x80);
+                target.push_back((u & 0x3f) | 0x80);
+              }
+            }
+            else
+            {
+              throw std::runtime_error(std::string("invalid unicode u") + res);
+            }
           }
         }
 
