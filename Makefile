@@ -1,4 +1,4 @@
-all: runtest runtest_no_boost
+all: runtest
 	echo "done"
 
 INCLUDE=-ICatch2/single_include/ -Iinclude
@@ -17,7 +17,3 @@ DEP= 	include/surfsara/impl/object.hpp \
 
 runtest: ${SRC} ${DEP} include/surfsara/impl/json_parser.hpp
 	g++ -g -Wall -std=c++11 -fmax-errors=5  ${INCLUDE} -o runtest ${SRC}
-
-runtest_no_boost: ${SRC} test/json_parser_impl.cpp ${DEP} include/surfsara/impl/json_parser_no_boost.hpp
-	g++ -DNO_BOOST_PARSING -g -Wall -std=c++11 -fmax-errors=5  ${INCLUDE} \
-	-o runtest_no_boost ${SRC}

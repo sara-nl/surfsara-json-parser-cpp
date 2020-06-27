@@ -81,23 +81,27 @@ inline surfsara::ast::Node surfsara::ast::Object::get(const String & k) const
   }
 }
 
-inline surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k)
+inline surfsara::ast::Node& surfsara::ast::Object::operator[](const String & key)
 {
-  static Node undef = Undefined();
-  auto itr = lookup.find(k);
+  auto itr = lookup.find(key);
   if(itr == lookup.end())
   {
-    return undef;
+    auto index = 0u;
+    if(!data.empty())
+    {
+      index = data.rbegin()->first + 1;
+    }
+    Node undef = Undefined();
+    auto itr2 = data.insert(std::make_pair(index, std::make_pair(key, undef)));
+    lookup[key] = index;
+    return itr2.first->second.second;
   }
   auto itr2 = data.find(itr->second);
   if(itr2 != data.end())
   {
     return itr2->second.second;
   }
-  else
-  {
-    return undef;
-  }
+  throw std::runtime_error("internal error: Object inconsistent");
 }
 
 inline const surfsara::ast::Node& surfsara::ast::Object::operator[](const String & k) const
@@ -113,10 +117,7 @@ inline const surfsara::ast::Node& surfsara::ast::Object::operator[](const String
   {
     return itr2->second.second;
   }
-  else
-  {
-    return undef;
-  }
+  throw std::runtime_error("internal error: Object inconsistent");
 }
 
 

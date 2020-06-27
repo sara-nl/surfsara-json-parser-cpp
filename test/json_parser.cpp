@@ -25,7 +25,6 @@ SOFTWARE.
 #include <surfsara/ast.h>
 #include <surfsara/json_parser.h>
 #include <surfsara/json_format.h>
-#include <boost/version.hpp>
 
 using namespace surfsara::ast;
 
@@ -77,13 +76,7 @@ TEST_CASE("parse string", "[JsonParser]")
   REQUIRE(parseJson("\" \\\\ \"").as<String>() == " \\ ");
   REQUIRE(parseJson("\" \\\" \"").as<String>() == " \" ");
   REQUIRE(parseJson("\" \\n \\r \\t \\\" \\\\ \"").as<String>() == " \n \r \t \" \\ ");
-#ifdef NO_BOOST_PARSING
   REQUIRE(formatJson(parseJson("\"\\u0141 \\u0143\"")) == "\"\u0141 \u0143\"");
-#else
-#if BOOST_VERSION >= 106500
-  REQUIRE(formatJson(parseJson("\"\\u0141 \\u0143\"")) == "\"\u0141 \u0143\"");
-#endif
-#endif // boost
 }
 
 TEST_CASE("parse array", "[JsonParser]")
