@@ -171,6 +171,11 @@ inline surfsara::ast::Node surfsara::ast::Object::keys() const
   return surfsara::ast::Node(ret);
 }
 
+inline std::size_t surfsara::ast::Object::size() const
+{
+  return data.size();
+}
+
 
 inline bool surfsara::ast::Object::remove(const String & key)
 {

@@ -130,6 +130,23 @@ inline bool surfsara::ast::Node::Value::isA() const
   return typeIndex == std::type_index(typeid(T));
 }
 
+
+template<typename T>
+const T& surfsara::ast::Node::Value::as() const
+{
+  typedef details::Converter<T> converter;
+  return converter::convert(*this);
+}
+
+template<typename T>
+T& surfsara::ast::Node::Value::as()
+{
+  typedef details::Converter<T> converter;
+  return converter::convert(*this);
+}
+
+
+
 inline void surfsara::ast::Node::Value::init(const Value & rhs)
 {
   if(rhs.typeIndex == std::type_index(typeid(String)))
@@ -171,7 +188,6 @@ inline void surfsara::ast::Node::Value::cleanup()
 // Node
 //
 ///////////////////////////////////////////////////////////////////////////////
-
 inline surfsara::ast::Node::Node() : value(Null()) {}
 
 template<typename T> inline
@@ -184,6 +200,7 @@ surfsara::ast::Node::Node(T v,
                           typename std::enable_if<std::is_integral<T>::value>::type*)
   : value(Integer(v)) {}
 
+inline surfsara::ast::Node::Node(const Value & v) : value(v) {}
 inline surfsara::ast::Node::Node(Null a) : value(Null()){}
 inline surfsara::ast::Node::Node(Undefined a) : value(Undefined()){}
 inline surfsara::ast::Node::Node(Boolean a) : value(Boolean(a)){}
@@ -342,7 +359,6 @@ T& surfsara::ast::Node::as()
 {
   typedef details::Converter<T> converter;
   return converter::convert(value);
-  //return boost::get<T>(value);
 }
 
 inline std::string surfsara::ast::Node::typeName() const

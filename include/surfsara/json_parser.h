@@ -42,5 +42,8 @@ namespace surfsara
   }
 }
 
+#ifdef NO_BOOST_PARSING
+#include "impl/json_parser_no_boost.hpp"
+#else
 #include "impl/json_parser.hpp"
-
+#endif

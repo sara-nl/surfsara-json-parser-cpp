@@ -146,6 +146,8 @@ namespace surfsara
 
       inline Node values() const;
       inline Node keys() const;
+
+      inline std::size_t size() const;
       /**
        * Remove the key if exists
        * return if the keys was found
@@ -300,11 +302,18 @@ namespace surfsara
         template<typename T>
         inline bool isA() const;
 
+        template<typename T>
+        T& as();
+
+        template<typename T>
+        const T& as() const;
+
       private:
         inline void init(const Value & rhs);
         inline void cleanup();
       };
 
+      Node(const Value & v);
     private:
       typedef std::function<bool(const Node & root,
                                  const std::vector<std::string> & path)> Predicate;
