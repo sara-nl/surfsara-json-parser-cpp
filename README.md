@@ -1,4 +1,11 @@
-# Json Parser for c++ based on boost spirit
+# JSON Parser for c++
+
+A JSON parser and serializer for C11.
+
+Features:
+* parsing JSON from streams and buffers
+* serialize JSON (compact or human readible)
+* path expressions for searching and updating structures
 
 ## path expression
 
